@@ -5,33 +5,33 @@ const { JSDOM } = jsdom;
 const path = require('path');
 const webpackConfig = require('./webpack.config');
 const webpack = require('webpack');
-const merge = require('webpack-merge');
 
 describe('HtmlCriticalWebpackPlugin Cases: Generate Critical CSS', () => {
   const buildDirectory = path.resolve(__dirname, 'build');
 
   describe('minimum configuration', () => {
-    let indexHtmlString;
-    let indexHtmlDom;
+    // let indexHtmlString;
+    let document;
 
     before((done) => {
       webpack(webpackConfig, () => {
-        indexHtmlString = fs.readFileSync(`${buildDirectory}/index.html`, { encoding: 'utf8' });
-        indexHtmlDom = new JSDOM(indexHtmlString);
+        const indexHtmlString = fs.readFileSync(`${buildDirectory}/index.html`, { encoding: 'utf8' });
+
+        document = (new JSDOM(indexHtmlString)).window.document;
 
         done();
       });
     });
 
     it('should generate the expected critical inline <style> tag', () => {
-      const inlineStyleTags = indexHtmlDom.window.document.querySelectorAll('style');
+      const inlineStyleTags = document.querySelectorAll('style');
 
       assert.equal(inlineStyleTags.length, 1);
       assert.equal(inlineStyleTags[0].getAttribute('type'), 'text/css');
     });
 
     it('should generate the expected critical <link> tag', () => {
-      const linkTags = indexHtmlDom.window.document.querySelectorAll('link');
+      const linkTags = document.querySelectorAll('link');
       
       assert.equal(linkTags.length, 2);
       assert.equal(linkTags[0].getAttribute('rel'), 'preload');
@@ -42,7 +42,7 @@ describe('HtmlCriticalWebpackPlugin Cases: Generate Critical CSS', () => {
     });
 
     it('should generate the expected critical <noscript> tag', () => {
-      const noscriptTags = indexHtmlDom.window.document.querySelectorAll('noscript');
+      const noscriptTags = document.querySelectorAll('noscript');
       
       assert.equal(noscriptTags.length, 2);
     });
@@ -50,25 +50,33 @@ describe('HtmlCriticalWebpackPlugin Cases: Generate Critical CSS', () => {
   });
 
   describe('public path', () => {
-    let indexHtmlString;
-    let indexHtmlDom;
+    let document;
 
-    const config = merge({ output: { publicPath: '//cdn.example.com/' } }, webpackConfig);
+    const output = Object.assign({ publicPath: '//cdn.example.com/' }, webpackConfig.output);
+    const config = Object.assign({}, webpackConfig, { output: output });
 
     before((done) => {
       webpack(config, () => {
-        indexHtmlString = fs.readFileSync(`${buildDirectory}/index.html`, { encoding: 'utf8' });
-        indexHtmlDom = new JSDOM(indexHtmlString);
+        const indexHtmlString = fs.readFileSync(`${buildDirectory}/index.html`, { encoding: 'utf8' });
+
+        document = (new JSDOM(indexHtmlString)).window.document;
         
         done();
       });
     });
 
     it('should generate the expected critical inline <style> tag', () => {
-      const inlineStyleTags = indexHtmlDom.window.document.querySelectorAll('style');
+      const inlineStyleTags = document.querySelectorAll('style');
 
       assert.equal(inlineStyleTags.length, 1);
       assert.equal(inlineStyleTags[0].getAttribute('type'), 'text/css');
+    });
+
+    it('assets reference should start with public path', () => {
+      const cssAssets = [].slice.call(document.querySelectorAll('link[href]'), 0).map(link => link.getAttribute('href'));
+      const jsAssets = [].slice.call(document.querySelectorAll('script[src]'), 0).map(script => script.getAttribute('src'));
+      
+      assert.ok(cssAssets.concat(jsAssets).every(asset => (/^\/\/cdn\.example\.com/).test(asset)));
     });
   });
 
