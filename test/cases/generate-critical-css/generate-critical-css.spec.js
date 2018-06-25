@@ -10,7 +10,6 @@ describe('HtmlCriticalWebpackPlugin Cases: Generate Critical CSS', () => {
   const buildDirectory = path.resolve(__dirname, 'build');
 
   describe('minimum configuration', () => {
-    // let indexHtmlString;
     let document;
 
     before((done) => {
@@ -72,11 +71,16 @@ describe('HtmlCriticalWebpackPlugin Cases: Generate Critical CSS', () => {
       assert.equal(inlineStyleTags[0].getAttribute('type'), 'text/css');
     });
 
-    it('assets reference should start with public path', () => {
+    it('should contain publicPath prefix in link[href]', () => {
       const cssAssets = [].slice.call(document.querySelectorAll('link[href]'), 0).map(link => link.getAttribute('href'));
+
+      assert.ok(cssAssets.every(asset => new RegExp(`^${config.output.publicPath}`).test(asset)));
+    });
+
+    it('should contain publicPath prefix in script[src]', () => {
       const jsAssets = [].slice.call(document.querySelectorAll('script[src]'), 0).map(script => script.getAttribute('src'));
-      
-      assert.ok(cssAssets.concat(jsAssets).every(asset => (/^\/\/cdn\.example\.com/).test(asset)));
+
+      assert.ok(jsAssets.every(asset => new RegExp(`^${config.output.publicPath}`).test(asset)));
     });
   });
 
