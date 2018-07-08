@@ -1,3 +1,4 @@
+const path = require('path');
 const critical = require('critical');
 
 class HtmlCriticalWebpackPlugin {
@@ -7,7 +8,11 @@ class HtmlCriticalWebpackPlugin {
   }
 
   emit(compilation, callback) {
-    critical.generate(this.options, (err) => {
+    const css = Object.keys(compilation.assets)
+      .filter(function (filename) { return /\.css$/.test(filename); })
+      .map(function (filename) { return path.join(compilation.outputOptions.path, filename); });
+
+    critical.generate(Object.assign({ css }, this.options), (err) => {
       callback(err);
     });
   }
