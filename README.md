@@ -58,7 +58,7 @@ After you have [installed Docker](https://www.docker.com/community-edition), you
 1. SSH into the container - `docker exec -it html-critical-webpack-plugin_nodejs_1 /bin/bash`
 1. Install dependencies - `rm -rf node_modules && npm install` (this ensures Linux specific dependencies get installed)
 
-Now you can run the project's `npm` scripts like usuual:
+Now you can run the project's `npm` scripts like usual:
 1. Run unit tests - `npm run test`
 1. Run the build - `npm run ci`
 
